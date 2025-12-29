@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CipherVault - Encrypt/Decrypt</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<button class="back-btn" onclick="location.href='index.html'">
+  <span class="arrow">←</span>
+</button>
+
+<div class="card">
+
+  <header class="card-header">
+    <h1 id="modeTitle"></h1>
+    <p id="modeDescription"></p>
+  </header>
+
+  <div class="card-body">
+
+    <div class="file-block">
+      <label class="block-title">Select File</label>
+      <div class="drop-zone" id="dropZone">
+        <span id="dropText">Click to browse or drop a file</span>
+        <input type="file" id="filePicker" />
+      </div>
+    </div>
+
+    <div class="password-block">
+      <label>Password</label>
+      <input id="password" type="password" />
+
+      <label id="confirmLabel">Confirm Password</label>
+      <input id="confirm" type="password" />
+
+      <div id="pwStrength"></div>
+    </div>
+
+    <button id="startBtn" class="action-btn">Start Process</button>
+
+    <div class="status-box">
+      <pre id="statusLog"></pre>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODE SETUP ONLY -->
+<script>
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode");
+
+  const modeTitle = document.getElementById("modeTitle");
+  const modeDescription = document.getElementById("modeDescription");
+  const confirmLabel = document.getElementById("confirmLabel");
+  const confirmInput = document.getElementById("confirm");
+
+  if (mode === "encrypt") {
+    modeTitle.textContent = "Encrypt File";
+    modeDescription.textContent = "Secure AES-256 encryption process";
+    confirmLabel.style.display = "block";
+    confirmInput.style.display = "block";
+  } else {
+    modeTitle.textContent = "Decrypt File";
+    modeDescription.textContent = "Open and unlock encrypted files";
+    confirmLabel.style.display = "none";
+    confirmInput.style.display = "none";
+  }
+</script>
+
+<!-- ONLY ONE SCRIPT -->
+<script src="renderer.js"></script>
+
+</body>
+</html>

@@ -1,61 +1,60 @@
 // src/controllers/decryptController.js
+// GUI-ONLY DECRYPTION CONTROLLER
 
 const path = require("path");
-const chalk = require("chalk");
 
 const { deriveKeyPBKDF2 } = require("../core/keyDerivation");
 const { decryptFile: aesDecrypt } = require("../core/aesDecrypt");
 
 const {
-    extractMetadataAndStreamCipher,
-    ensureDirExists,
-    safeUnlink
+  extractMetadataAndStreamCipher,
+  ensureDirExists,
+  safeUnlink
 } = require("../system/fileManager");
 
-const { askPasswordForDecryption } = require("../cli/userPrompts");
+/**
+ * GUI Decryption Controller
+ * Called ONLY from Electron
+ */
+async function decryptController({ filePath, password }) {
+  if (!filePath) {
+    throw new Error("No file selected.");
+  }
 
-async function decryptFile(encryptedPath, outputPath = null) {
-    try {
-        console.log(chalk.cyan("\n[ CipherVault ] Starting Decryption...\n"));
+  if (!password) {
+    throw new Error("Password is required.");
+  }
 
-        // 1. Ask for password
-        const password = askPasswordForDecryption();
+  if (!filePath.toLowerCase().endsWith(".enc")) {
+    throw new Error("Invalid encrypted file.");
+  }
 
-        // 2. Extract metadata and ciphertext
-        const {
-            salt, iv, authTag, originalExtension, cipherPath
-        } = await extractMetadataAndStreamCipher(encryptedPath);
+  // 1. Read metadata + extract ciphertext
+  const {
+    salt,
+    iv,
+    authTag,
+    originalExtension,
+    cipherPath
+  } = await extractMetadataAndStreamCipher(filePath);
 
-        console.log(chalk.green("✔ Metadata loaded."));
+  // 2. Derive key
+  const key = await deriveKeyPBKDF2(password, salt);
 
-        // 3. Derive AES key
-        const key = await deriveKeyPBKDF2(password, salt);
+  // 3. Restore original filename
+  const folder = path.dirname(filePath);
+  const baseName = path.basename(filePath, ".enc");
+  const outputPath = path.join(folder, baseName + originalExtension);
 
-        // 4. Auto-restore original filename if user didn't provide output
-        let finalOut;
-        if (!outputPath) {
-            const folder = path.dirname(encryptedPath);
-            const baseName = path.basename(encryptedPath, ".enc");
-            finalOut = path.join(folder, baseName + originalExtension);
-        } else {
-            finalOut = outputPath;
-        }
+  await ensureDirExists(outputPath);
 
-        // Ensure folder exists
-        await ensureDirExists(finalOut);
+  // 4. Decrypt
+  await aesDecrypt(cipherPath, outputPath, key, iv, authTag);
 
-        // 5. Perform decryption
-        await aesDecrypt(cipherPath, finalOut, key, iv, authTag);
+  // 5. Cleanup temp file
+  await safeUnlink(cipherPath);
 
-        console.log(chalk.green("\n✔ Decryption successful!"));
-        console.log(chalk.blue(`→ Output file: ${finalOut}\n`));
-
-        // Remove temporary cipher file
-        safeUnlink(cipherPath);
-
-    } catch (err) {
-        console.log(chalk.red("❌ Decryption error: " + err.message));
-    }
+  return { outputPath };
 }
 
-module.exports = { decryptFile };
+module.exports = decryptController;

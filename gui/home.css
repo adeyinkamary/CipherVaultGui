@@ -1,0 +1,96 @@
+:root {
+  --bg: #06101d;
+  --accent: #00c6ff;
+  --text: #cfeaff;
+  --muted: #96b2cc;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top, #0b1c2f, #050c16 70%);
+  font-family: Inter, Arial, sans-serif;
+  color: var(--text);
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+/* LOGO WITH SLOW BREATHING GLOW */
+.app-logo {
+  width: 110px;
+  height: auto;
+  margin-bottom: 15px;
+  animation: glowPulse 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(0, 198, 255, 0.5));
+}
+
+@keyframes glowPulse {
+  0% { filter: drop-shadow(0 0 5px rgba(0, 198, 255, 0.4)); opacity: 0.85; }
+  50% { filter: drop-shadow(0 0 18px rgba(0, 198, 255, 0.9)); opacity: 1; }
+  100% { filter: drop-shadow(0 0 5px rgba(0, 198, 255, 0.4)); opacity: 0.85; }
+}
+
+/* TYPOGRAPHY */
+.title {
+  font-size: 34px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(0, 198, 255, 0.3);
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  margin-top: 4px;
+  margin-bottom: 35px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* BUTTONS */
+.btn-group button {
+  display: block;
+  width: 260px;
+  padding: 14px;
+  margin: 12px auto;
+  border-radius: 10px;
+  border: none;
+  font-size: 17px;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(0, 198, 255, 0.12);
+  border: 1px solid rgba(0, 198, 255, 0.4);
+  backdrop-filter: blur(6px);
+  transition: 0.25s ease;
+}
+
+.btn-group button:hover {
+  background: rgba(0, 198, 255, 0.25);
+  transform: translateY(-3px);
+}
+
+/* FOOTER */
+.footer {
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
+.footer-text {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.shield {
+  color: var(--accent);
+}

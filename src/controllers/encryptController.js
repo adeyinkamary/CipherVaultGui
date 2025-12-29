@@ -1,7 +1,7 @@
 // src/controllers/encryptController.js
+// GUI-ONLY ENCRYPTION CONTROLLER
 
 const path = require("path");
-const chalk = require("chalk");
 
 const { validatePassword } = require("../core/passwordStrength");
 const { generateSalt, generateIV } = require("../core/cryptoUtils");
@@ -10,81 +10,59 @@ const { encryptFile: aesEncrypt } = require("../core/aesEncrypt");
 
 const { buildMetadata } = require("../system/metadata");
 const {
-    ensureDirExists,
-    prependMetadataToCipher,
-    makeTempFilePath
+  ensureDirExists,
+  prependMetadataToCipher,
+  makeTempFilePath
 } = require("../system/fileManager");
 
 const { secureDelete } = require("../system/secureDelete");
-const { askPassword } = require("../cli/userPrompts");
 
-async function encryptFile(inputPath, outputPath = null) {
-    console.log(chalk.cyan("\n[ CipherVault ] Starting Encryption...\n"));
+/**
+ * GUI Encryption Controller
+ * Called ONLY from Electron
+ */
+async function encryptController({ filePath, password, confirmPassword }) {
+  if (!filePath) {
+    throw new Error("No file selected.");
+  }
 
-    try {
-        // 1. Pick default encrypted filename if none provided
-        if (!outputPath) {
-            const dir = path.dirname(inputPath);
-            const base = path.basename(inputPath, path.extname(inputPath));
-            outputPath = path.join(dir, `${base}.enc`);
-        }
+  if (!password) {
+    throw new Error("Password is required.");
+  }
 
-        // 2. Get password
-        const { password, confirm } = askPassword();
+  if (filePath.toLowerCase().endsWith(".enc")) {
+    throw new Error("File is already encrypted.");
+  }
 
-        // 3. Validate password
-        const valid = validatePassword(password, confirm);
-        if (!valid.valid) {
-            console.log(chalk.red("❌ Password invalid: ") + valid.message);
-            return;
-        }
+  const valid = validatePassword(password, confirmPassword);
+  if (!valid.valid) {
+    throw new Error(valid.message);
+  }
 
-        console.log(chalk.green(`✔ Password accepted (Entropy: ${valid.entropy} bits)`));
+  const dir = path.dirname(filePath);
+  const base = path.basename(filePath, path.extname(filePath));
+  const outputPath = path.join(dir, `${base}.enc`);
 
-        // 4. Salt + IV
-        const salt = generateSalt(16);
-        const iv = generateIV();
+  const salt = generateSalt(16);
+  const iv = generateIV();
+  const key = await deriveKeyPBKDF2(password, salt);
 
-        // 5. Derive key
-        const key = await deriveKeyPBKDF2(password, salt);
+  const tempCipher = makeTempFilePath("cipher-temp");
+  const authTag = await aesEncrypt(filePath, tempCipher, key, iv);
 
-        // 6. Encrypt into temporary ciphertext file
-        const tempCipher = makeTempFilePath("cipher-temp");
-        const authTag = await aesEncrypt(inputPath, tempCipher, key, iv);
+  const header = buildMetadata({
+    salt,
+    iv,
+    authTag,
+    originalExtension: path.extname(filePath) || ""
+  });
 
-        // 7. Build metadata (stores original file extension)
-        const originalExt = path.extname(inputPath) || "";
-        const header = buildMetadata({
-            salt,
-            iv,
-            authTag,
-            originalExtension: originalExt
-        });
+  await ensureDirExists(outputPath);
+  await prependMetadataToCipher(tempCipher, outputPath, header);
 
+  await secureDelete(filePath);
 
-        // PREVENT RE-ENCRYPTING .enc FILES
-        if (inputPath.toLowerCase().endsWith(".enc")) {
-            console.log(chalk.red("❌ ERROR: This file is already encrypted (.enc)."));
-            console.log(chalk.yellow("CipherVault will not re-encrypt encrypted files to prevent data loss."));
-            return;
-        }
-
-
-        // 8. Write final encrypted file
-        await ensureDirExists(outputPath);
-        await prependMetadataToCipher(tempCipher, outputPath, header);
-
-        // 9. Secure delete original
-        await secureDelete(inputPath);
-        console.log(chalk.yellow("✔ Original file securely deleted."));
-
-        console.log(chalk.green("\n✔ Encryption successful!"));
-        console.log(chalk.blue(`→ Output file: ${outputPath}\n`));
-
-    } catch (err) {
-        console.log(chalk.red("❌ Encryption error: " + err.message));
-        console.log(chalk.yellow("⚠ Encryption failed — original file NOT deleted."));
-    }
+  return { outputPath };
 }
 
-module.exports = { encryptFile };
+module.exports = encryptController;

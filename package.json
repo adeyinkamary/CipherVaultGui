@@ -2,7 +2,7 @@
   "name": "ciphervault",
   "version": "1.0.0",
   "description": "CipherVault - Secure File Encryption CLI",
-  "main": "index.js",
+  "main": "gui/main.js",
   "bin": {
     "ciphervault": "./index.js"
   },
@@ -22,11 +22,15 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "crypto": "^1.0.1",
+    "electron": "^39.2.7",
     "image-size": "^2.0.2",
     "inquirer": "^8.2.7",
     "readline-sync": "^1.4.10",
     "scrypt-js": "^3.0.1",
     "winston": "^3.18.3",
     "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "electron-reload": "^2.0.0-alpha.1"
   }
 }
